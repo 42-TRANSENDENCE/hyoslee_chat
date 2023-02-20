@@ -3,22 +3,23 @@
 유저가 pre-populate한 데이터를 보게 하고싶다.
 그래서 그 데이터를 캐시에 넣을 수도있고, 아니면 그냥 placeholder이기 때문에 캐시에 넣고 싶지 않을 수도 있다.
 그 데이터는 서버 또는 클라이언트로부터 올 수 있고, 어디서 사용할 지는 어떤 React query메소드를 사용할지에 달려있다.
+
 1. queryClient의 prefetchQuery메소드 : 서버로부터 받아온 data를 캐시에 추가한다.
 2. queryClient의 setQueryData메소드 : 클라이언트로부터 받아온 data를 캐시에 추가한다.
-useQuery를 실행하지 않는다.
-(데이터를 캐쉬에 추가해서, 다음번 useQuery 요청에 그 캐쉬 데이터를 제공해 줄 수 있다.)
-서버에서 데이터를 fetch하지 않고, 데이터에 기반한 UI 바꿀때 유용하다.
+   useQuery를 실행하지 않는다.
+   (데이터를 캐쉬에 추가해서, 다음번 useQuery 요청에 그 캐쉬 데이터를 제공해 줄 수 있다.)
+   서버에서 데이터를 fetch하지 않고, 데이터에 기반한 UI 바꿀때 유용하다.
 3. useQuery의 placeholder옵션 : 클라이언트로부터 받아온 data를 캐시에 추가하지 않는다.
-4. useQuery의 initialDate옵션 : 클라이언트로부터 받아온 data를 캐시에 추가한다.
+4. useQuery의 initialData옵션 : 클라이언트로부터 받아온 data를 캐시에 추가한다.
 
 예시)
 
 건강관리 스파 웹사이트의 85%가 홈페이지에서 treatments탭을 클릭한다고 하자.
 queryClient.prefetchQuery로 treatments data를 캐시에 추가하자.
- 유저가 treatments page를 로드할때,
- i) 캐시타임 이내라면, 캐쉬로부터 데이터를 로드해온다,
- 그 후 컴포넌트를 마운팅해서 refresh를 trigger한 상황이므로 stale한 상태이다.
- 따라서 useQuery가 fresh data를 fetch한다. 
+유저가 treatments page를 로드할때,
+i) 캐시타임 이내라면, 캐쉬로부터 데이터를 로드해온다,
+그 후 컴포넌트를 마운팅해서 refresh를 trigger한 상황이므로 stale한 상태이다.
+따라서 useQuery가 fresh data를 fetch한다.
 ii) 캐시타임 이외라면, useQuery가 fresh data를 fetch해오고 그 동안에는 유저는 아무것도 볼 수 없다.
 
 ```jsx
@@ -41,7 +42,7 @@ export function Home(): ReactElement {
 
 ```jsx
 async function getTreatments(): Promise<Treatment[]> {
-  const { data } = await axiosInstance.get('/treatments');
+  const { data } = await axiosInstance.get("/treatments");
   return data;
 }
 
@@ -60,9 +61,9 @@ export function usePrefetchTreatments(): void {
 Home에서 Treatments탭으로 이동하면, cache데이터를 먼저 보여준 후, 백그라운드에서 fetch해오는걸 Devtools를 통해서 알 수 있다.
 
 예시)
-달력모양으로 된 캘린터에 예약가능한 날짜들이 있다. 
+달력모양으로 된 캘린터에 예약가능한 날짜들이 있다.
 useQuery()의 dependecy에 month까지 의존성을 넣어주어 캐시공간을 분리해준 후,
- 컴포넌트 마운트 후 다음달 미리 prefetch하게 useEffect()옵션에 넣어준다.
+컴포넌트 마운트 후 다음달 미리 prefetch하게 useEffect()옵션에 넣어준다.
 useQuery()의 keepPreviousData는 background가 바뀌지 않을때만 유용하다. 여기선 예약을 해버리면 바뀌기 때문에 유용하지 않다.
 
 query함수로부터 받아온 데이터를 변형해주는 select옵션을 사용하여 예약된 일정은 filter out해주게 하였다.
@@ -73,7 +74,7 @@ export type AppointmentDateMap = Record<number, Appointment[]>;
 const commonOptions = { staleTime: 0, cacheTime: 300000 };
 async function getAppointments(
   year: string,
-  month: string,
+  month: string
 ): Promise<AppointmentDateMap> {
   const { data } = await axiosInstance.get(`/appointments/${year}/${month}`);
   return data;
@@ -122,7 +123,7 @@ export function useAppointments(): UseAppointments {
 
   const selectFn = useCallback(
     (data) => getAvailableAppointments(data, user),
-    [user],
+    [user]
   );
 
   /** ****************** END 2: filter appointments  ******************** */
@@ -135,7 +136,7 @@ export function useAppointments(): UseAppointments {
     queryClient.prefetchQuery(
       [queryKeys.appointments, nextMonthYear.year, nextMonthYear.month],
       () => getAppointments(nextMonthYear.year, nextMonthYear.month),
-      commonOptions,
+      commonOptions
     );
   }, [queryClient, monthYear]);
   // TODO: update with useQuery!
@@ -157,7 +158,7 @@ export function useAppointments(): UseAppointments {
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
       refetchInterval: 60000,
-    },
+    }
   );
 
   /** ****************** END 3: useQuery  ******************************* */
@@ -169,7 +170,7 @@ export function useAppointments(): UseAppointments {
 ```jsx
 export function getAvailableAppointments(
   appointments: AppointmentDateMap,
-  user: User | null,
+  user: User | null
 ): AppointmentDateMap {
   // clone so as not to mutate argument directly
   const filteredAppointments = { ...appointments };
@@ -179,7 +180,7 @@ export function getAvailableAppointments(
     filteredAppointments[date] = filteredAppointments[date].filter(
       (appointment: Appointment) =>
         (!appointment.userId || appointment.userId === user?.id) &&
-        !appointmentInPast(appointment),
+        !appointmentInPast(appointment)
     );
   });
 

@@ -1,5 +1,5 @@
 import { useParams } from "react-router";
-import { useQuery } from "react-query";
+import { useMutation, useQuery } from "react-query";
 import { ChatElement } from "./styles";
 import { useState } from "react";
 
@@ -12,7 +12,11 @@ const Chat = () => {
   const { chatId } = params;
   const [chat, setChat] = useState("");
 
-  const { data: chatData, isLoading } = useQuery<any>(["chat", chatId], () =>
+  const {
+    data: chatData,
+    isLoading,
+    refetch,
+  } = useQuery<any>(["chat", chatId], () =>
     fetch(`/api/chats/${chatId}`).then((res) => res.json())
   );
   if (isLoading) return <div />;
@@ -33,6 +37,7 @@ const Chat = () => {
       .then((res) => res.text())
       .then((data) => {
         console.log("/api/post :\t", data);
+        refetch();
       });
     setChat("");
   };
@@ -44,16 +49,18 @@ const Chat = () => {
 
   return (
     <>
-      {chatData.map((chat: any) => {
-        return (
-          <ChatElement>
-            <div>
-              {chat.SenderId}({chat.createdAt})
-            </div>
-            <div>&emsp;{chat.content}</div>
-          </ChatElement>
-        );
-      })}
+      <div>
+        {chatData.map((chat: any) => {
+          return (
+            <ChatElement>
+              <div>
+                {chat.SenderId}({chat.createdAt})
+              </div>
+              <div>&emsp;{chat.content}</div>
+            </ChatElement>
+          );
+        })}
+      </div>
       <form onSubmit={onSubmitForm}>
         <textarea placeholder="" value={chat} onChange={onChangeChat} />
         <button

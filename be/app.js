@@ -32,7 +32,7 @@ router.get("/chats/:chat_id", (req, res) => {
 });
 router.post("/chats/:chat_id", (req, res) => {
   console.log("/api/post:\t", req.body);
-  chats_db[req.params.chat_id].push(req.body);
+  chats_db[req.params.chat_id].data.push(req.body);
   const io = req.app.get("io");
   io.of("/chats").emit("message", req.body);
   // io.of("/chats").to(`/chats-${req.params.chat_id}`).emit("message", req.body);

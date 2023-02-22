@@ -25,7 +25,12 @@ router.post("/post", (req, res) => {
 });
 
 router.get("/chats", (req, res) => {
-  return res.json(Object.keys(chats_db));
+  // return res.json(Object.keys(chats_db));
+  return res.json(
+    Object.keys(chats_db).map((v) => {
+      return { chatId: v, is_private: chats_db[v]["private"] };
+    })
+  );
 });
 router.get("/chats/:chat_id", (req, res) => {
   return res.json(chats_db[req.params.chat_id]);
@@ -40,6 +45,10 @@ router.post("/chats/:chat_id", (req, res) => {
   console.log(`/chats-${req.params.chat_id} 소켓Room에게 ${req.body} 전송`);
   console.log(req.body);
   res.send("OK");
+});
+router.get("/chats/:chat_id/private", (req, res) => {
+  console.log(chats_db[req.params.chat_id].private + "합니다");
+  return res.send(chats_db[req.params.chat_id].private);
 });
 /************************* router Real (/api/*) **************************/
 

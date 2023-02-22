@@ -1,4 +1,4 @@
-import { useParams } from "react-router";
+import { Navigate, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import { ChatElement } from "./styles";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -7,6 +7,7 @@ import { io } from "socket.io-client";
 import Scrollbars from "react-custom-scrollbars";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import ChatPrivate from "../chatPrivate";
 
 // async function fetchChat(chatId: string) {
 //   return fetch(`/api/chats/${chatId}`).then((res) => res.json());
@@ -40,7 +41,8 @@ const Chat = () => {
   const { data: chatDatas, isLoading } = useQuery<any>(["chat", chatId], () =>
     fetch(`/api/chats/${chatId}`).then((res) => res.json())
   );
-  console.log(chatDatas);
+  // console.log(chatDatas);
+
   const queryClient = useQueryClient();
   const { mutate: mutatePost } = useMutation(
     (chat: string) => postChat(chatId!, chat),
@@ -115,6 +117,8 @@ const Chat = () => {
   };
 
   if (isLoading) return <div />;
+  if (localStorage.getItem(chatId!) === "false")
+    return <Navigate to={`/chats/${chatId}/private`} />;
   return (
     <>
       <Scrollbars

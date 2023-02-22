@@ -1,5 +1,10 @@
 import { useParams } from "react-router";
-import { useMutation, useQuery } from "react-query";
+import {
+  QueryClient,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "react-query";
 import { ChatElement } from "./styles";
 import { useState } from "react";
 
@@ -7,38 +12,47 @@ import { useState } from "react";
 //   return fetch(`/api/chats/${chatId}`).then((res) => res.json());
 // }
 
+async function postChat(chatId: string, data: any): Promise<string> {
+  let res = await fetch(`/api/chats/${chatId}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      createdAt: new Date(),
+      SenderId: "hyoslee",
+      content: data,
+    }),
+  }).then((res) => res.text());
+  return res;
+}
+
 const Chat = () => {
   const params = useParams<{ chatId?: string }>();
   const { chatId } = params;
   const [chat, setChat] = useState("");
 
   const {
-    data: chatData,
+    data: chatDatas,
     isLoading,
     refetch,
   } = useQuery<any>(["chat", chatId], () =>
     fetch(`/api/chats/${chatId}`).then((res) => res.json())
   );
+  const queryClient = useQueryClient();
+  const { mutate: mutatePost } = useMutation(
+    (chat: string) => postChat(chatId!, chat),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(["chat", chatId]);
+      },
+    }
+  );
   if (isLoading) return <div />;
 
   const onSubmitForm = (e: any) => {
     e.preventDefault();
-    fetch(`/api/chats/${chatId}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        createdAt: new Date(),
-        SenderId: "hyoslee",
-        content: chat,
-      }),
-    })
-      .then((res) => res.text())
-      .then((data) => {
-        console.log("/api/post :\t", data);
-        refetch();
-      });
+    mutatePost(chat);
     setChat("");
   };
 
@@ -50,7 +64,7 @@ const Chat = () => {
   return (
     <>
       <div>
-        {chatData.map((chat: any) => {
+        {chatDatas.map((chat: any) => {
           return (
             <ChatElement>
               <div>

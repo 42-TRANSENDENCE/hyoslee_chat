@@ -1,12 +1,9 @@
 import { useParams } from "react-router";
-import {
-  QueryClient,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "react-query";
+import { useMutation, useQuery, useQueryClient } from "react-query";
 import { ChatElement } from "./styles";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { io } from "socket.io-client";
+// import socket from "../socket";
 
 // async function fetchChat(chatId: string) {
 //   return fetch(`/api/chats/${chatId}`).then((res) => res.json());
@@ -27,16 +24,16 @@ async function postChat(chatId: string, data: any): Promise<string> {
   return res;
 }
 
+const socket = io("http://localhost:3095/chats", {
+  transports: ["websocket"],
+});
+
 const Chat = () => {
   const params = useParams<{ chatId?: string }>();
   const { chatId } = params;
   const [chat, setChat] = useState("");
 
-  const {
-    data: chatDatas,
-    isLoading,
-    refetch,
-  } = useQuery<any>(["chat", chatId], () =>
+  const { data: chatDatas, isLoading } = useQuery<any>(["chat", chatId], () =>
     fetch(`/api/chats/${chatId}`).then((res) => res.json())
   );
   const queryClient = useQueryClient();
@@ -48,10 +45,32 @@ const Chat = () => {
       },
     }
   );
-  if (isLoading) return <div />;
+  const onMessage = useCallback(
+    (data: any) => {
+      console.log("데이터: ", data);
+      queryClient.setQueryData(["chat", chatId], () => {
+        return [...chatDatas, data];
+      });
+    },
+    [queryClient, chatId, chatDatas]
+  );
+
+  socket.on("message", (data) => console.log("message", data));
+
+  useEffect(() => {
+    socket?.on("message", onMessage);
+    // console.log("소켓데이터-", socket);
+    return () => {
+      socket?.off("message", onMessage);
+    };
+  }, [onMessage]);
 
   const onSubmitForm = (e: any) => {
     e.preventDefault();
+    if (!chat?.trim()) {
+      setChat("");
+      return;
+    }
     mutatePost(chat);
     setChat("");
   };
@@ -61,12 +80,13 @@ const Chat = () => {
     setChat(e.target.value);
   };
 
+  if (isLoading) return <div />;
   return (
     <>
       <div>
         {chatDatas.map((chat: any) => {
           return (
-            <ChatElement>
+            <ChatElement key={chat.createdAt}>
               <div>
                 {chat.SenderId}({chat.createdAt})
               </div>

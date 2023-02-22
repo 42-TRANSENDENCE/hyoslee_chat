@@ -33,6 +33,12 @@ router.get("/chats/:chat_id", (req, res) => {
 router.post("/chats/:chat_id", (req, res) => {
   console.log("/api/post:\t", req.body);
   chats_db[req.params.chat_id].push(req.body);
+  const io = req.app.get("io");
+  io.of("/chats").emit("message", req.body);
+  // io.of("/chats").to(`/chats-${req.params.chat_id}`).emit("message", req.body);
+  // io.sockets.in(`/chats-${req.params.chat_id}`).emit("message", req.body);
+  console.log(`/chats-${req.params.chat_id} 소켓Room에게 ${req.body} 전송`);
+  console.log(req.body);
   res.send("OK");
 });
 /************************* router Real (/api/*) **************************/
@@ -47,11 +53,22 @@ const server = app.listen(app.get("PORT"), () => {
 
 /* Socket */
 const io = SocketIO(server, { transports: ["websocket"] });
+app.set("io", io);
 /************************* socket test **************************/
-const chatNsp = io.of("chat").on("connect", (socket) => {
+// const chatNsp = io.of("chat").on("connect", (socket) => {
+//   socket.on("ping", (data) => {
+//     console.log(data, "\t from client!");
+//     socket.emit("pong", data);
+//   });
+// });
+/************************* socket test End **************************/
+const chats = io.of("chats").on("connect", (socket) => {
+  Object.keys(chats_db).forEach((chat_id) => {
+    console.log(`chats-${chat_id} 소켓Room에 join`);
+    socket.join(`chats-${chat_id}`);
+  });
   socket.on("ping", (data) => {
     console.log(data, "\t from client!");
     socket.emit("pong", data);
   });
 });
-/************************* socket test End **************************/

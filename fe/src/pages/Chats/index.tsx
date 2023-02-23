@@ -28,7 +28,6 @@ const Chats = () => {
     <Container>
       <Tab>
         {data?.map(({ chatId, is_private }) => {
-          console.log(is_private + "입니다");
           if (is_private) {
             localStorage.setItem(chatId, "false");
             return (

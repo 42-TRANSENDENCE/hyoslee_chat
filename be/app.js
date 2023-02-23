@@ -50,6 +50,13 @@ router.get("/chats/:chat_id/private", (req, res) => {
   console.log(chats_db[req.params.chat_id].private + "합니다");
   return res.send(chats_db[req.params.chat_id].private);
 });
+router.post("/chats/:chat_id/private", (req, res) => {
+  // console.log(chats_db[req.params.chat_id].private + "합니다");
+  if (chats_db[req.params.chat_id].secret === req.body.secret) {
+    return res.json(true);
+  }
+  return res.json(false);
+});
 /************************* router Real (/api/*) **************************/
 
 /************************** router end **************************/

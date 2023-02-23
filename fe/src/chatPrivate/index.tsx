@@ -22,6 +22,7 @@ const ChatPrivate = () => {
   const { chatId } = params;
   // let password = "1235";
   const [password, setPassword] = useState("");
+  const [passwordCheck, setPasswordCheck] = useState(true);
 
   const {
     data: password_result,
@@ -42,6 +43,7 @@ const ChatPrivate = () => {
       setPassword("");
       return;
     }
+    setPasswordCheck(false);
     refetch();
     setPassword("");
   };
@@ -49,6 +51,7 @@ const ChatPrivate = () => {
   if (isLoading) return <>로딩중</>;
 
   if (password_result === "true" || localStorage.getItem(chatId!) === "true") {
+    // setPasswordCheck(true);
     localStorage.setItem(chatId!, "true");
     return <Navigate to={`/chats/${chatId}`} />;
   }
@@ -61,6 +64,7 @@ const ChatPrivate = () => {
       >
         비밀번호 확인
       </button>
+      {!passwordCheck && <div>비밀번호가 틀렸습니다.</div>}
     </form>
   );
 };

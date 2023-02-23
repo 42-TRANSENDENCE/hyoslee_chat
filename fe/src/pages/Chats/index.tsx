@@ -28,17 +28,17 @@ const Chats = () => {
     <Container>
       <Tab>
         {data?.map(({ chatId, is_private }) => {
-          if (is_private) {
-            localStorage.setItem(chatId, "false");
+          if (!is_private || localStorage.getItem(chatId) === "true") {
+            localStorage.setItem(chatId, "true");
             return (
-              <NavLink key={chatId.at(-1)} to={`/chats/${chatId}/private`}>
+              <NavLink key={chatId.at(-1)} to={`/chats/${chatId}`}>
                 <TabChannel>{chatId}</TabChannel>
               </NavLink>
             );
           }
-          localStorage.setItem(chatId, "true");
+          localStorage.setItem(chatId, "false");
           return (
-            <NavLink key={chatId.at(-1)} to={`/chats/${chatId}`}>
+            <NavLink key={chatId.at(-1)} to={`/chats/${chatId}/private`}>
               <TabChannel>{chatId}</TabChannel>
             </NavLink>
           );

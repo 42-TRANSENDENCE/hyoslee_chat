@@ -56,8 +56,45 @@ chats_db = {
     secret: "1234",
   },
 };
+v2_room_db = {
+  data: [
+    {
+      title: "room1",
+      id: 0,
+      max: 5,
+      owner: "hyoslee",
+      password: "",
+      createdAt: "1992.02.19",
+    },
+    {
+      title: "room2",
+      id: 1,
+      max: 10,
+      owner: "hyoslee",
+      password: "1234",
+      createdAt: "1992.02.20",
+    },
+  ],
+};
+v2_chat_db = {
+  0: [
+    {
+      user: "hyoslee",
+      chat: "hello! it's chat 1!",
 
+      createdAt: "2022-12-12",
+    },
+    {
+      user: "junyopar",
+      chat: "oh! it's chat 1!",
+
+      createdAt: "2022-12-12",
+    },
+  ],
+};
 module.exports = {
   user_db,
   chats_db,
+  v2_room_db,
+  v2_chat_db,
 };

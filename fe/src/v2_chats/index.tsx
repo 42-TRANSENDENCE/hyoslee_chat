@@ -55,7 +55,7 @@ export default function V2chats() {
       return response.json();
     },
     {
-      retry: 1,
+      retry: 0,
       retryOnMount: true,
     }
   );

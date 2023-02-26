@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useMutation, useQueryClient } from "react-query";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 async function postRoom(
   title: string,
@@ -95,6 +95,7 @@ export default function CreateRoom() {
         </div>
         <button type="submit">생성</button>
       </form>
+      <Link to="/v2_rooms">방 목록으로</Link>
     </fieldset>
   );
 }

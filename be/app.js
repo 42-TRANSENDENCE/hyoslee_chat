@@ -70,11 +70,10 @@ router.get("/room_list", (req, res) => {
 // router.get("/room_list/room");
 let room_id = 2;
 router.post("/room_list/room", (req, res) => {
-  console.log("새로 등록합니다!!");
   const { title, max, password } = req.body;
-  for (const [key, value] of Object.entries(req.body)) {
-    console.log(`${key}: ${value}`);
-  }
+  // for (const [key, value] of Object.entries(req.body)) {
+  //   console.log(`${key}: ${value}`);
+  // }
   new_data = {
     id: room_id++,
     title,
@@ -89,7 +88,7 @@ router.post("/room_list/room", (req, res) => {
   return res.send("OK!");
 });
 router.get("/room_list/room/:id", (req, res) => {
-  console.log("here!", req.params.id, req.query.password);
+  // console.log("here!", req.params.id, req.query.password);
   const room = v2_room_db.data.find((v) => {
     // console.log(String(v.id), req.params.id);
     if (String(v.id) === req.params.id) {
@@ -107,7 +106,7 @@ router.get("/room_list/room/:id/chat", (req, res) => {
   // console.log(v2_chat_db[req.params.id]);
   console.log(req.params.id, req.query.password);
   if (req.query.password) {
-    console.log("비밀번호가 있습니다.");
+    // console.log("비밀번호가 있습니다.");
     const room = v2_room_db.data.find((v) => {
       if (String(v.id) === req.params.id) {
         return v;
@@ -126,7 +125,7 @@ router.get("/room_list/room/:id/chat", (req, res) => {
 });
 router.post("/room_list/room/:id/chat", (req, res) => {
   // console.log("/api/post:\t", req.body);
-  console.log("여기로 왓습니다");
+  // console.log("여기로 왓습니다");
   if (!v2_chat_db[req.params.id]) {
     v2_chat_db[req.params.id] = [];
   }

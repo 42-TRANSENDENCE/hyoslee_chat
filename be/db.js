@@ -92,6 +92,23 @@ v2_chat_db = {
     },
   ],
 };
+v2_dms_db = {
+  data: [
+    {
+      content: "hello! it's dm 1!",
+      createdAt: "2022-12-12",
+      SenderId: "hyoslee",
+      ReceiverId: "junyopar",
+    },
+    {
+      content: "222222222222222",
+      createdAt: "2022-12-13",
+      SenderId: "junyopar",
+      ReceiverId: "EbXCMQL9SzI6gobnYE2qIJsNfx_091_H",
+    },
+  ],
+};
+
 module.exports = {
   user_db,
   chats_db,

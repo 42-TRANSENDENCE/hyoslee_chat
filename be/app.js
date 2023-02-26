@@ -138,8 +138,6 @@ router.get("/room_list/room/:id/chat", (req, res) => {
   res.json(v2_chat_db[req.params.id]);
 });
 router.post("/room_list/room/:id/chat", (req, res) => {
-  // console.log("/api/post:\t", req.body);
-  // console.log("여기로 왓습니다");
   if (!v2_chat_db[req.params.id]) {
     v2_chat_db[req.params.id] = [];
   }
@@ -151,13 +149,31 @@ router.post("/room_list/room/:id/chat", (req, res) => {
 
   const io = req.app.get("io");
   io.of("/v2_chat").to(req.params.id).emit("message", req.body);
-  // io.of("/v2_chat").emit("message", req.body);
-  // io.of("/chats").to(`/chats-${req.params.chat_id}`).emit("message", req.body);
-  // io.sockets.in(`/chats-${req.params.chat_id}`).emit("message", req.body);
+
   console.log(`${req.params.id} 소켓Room에게 ${req.body} 전송`);
   console.log(req.body);
 
   res.send("OK");
+});
+router.get("/dms", (req, res) => {
+  return res.json(v2_dms_db.data);
+});
+router.get("/dms/:id", (req, res) => {
+  const SenderID = req.sessionID;
+  const ReceiverID = req.params.id;
+  const dms = v2_dms_db.data.filter((v) => {
+    return (
+      (v.SenderID === SenderID && v.ReceiverID === ReceiverID) ||
+      (v.SenderID === ReceiverID && v.ReceiverID === SenderID)
+    );
+  });
+  return res.json(dms);
+});
+router.post("/dms/:id", (req, res) => {
+  console.log(req.body);
+  v2_dms_db.data.push(req.body);
+  io.of("/v2_dm").emit("DM", req.body);
+  return res.send("OK!");
 });
 /************************* router v2 End (/api/*) **************************/
 /************************** router end **************************/
@@ -193,6 +209,7 @@ app.set("io", io);
 /************************* socket v2 **************************/
 const room = io.of("/v2_room");
 const chat = io.of("/v2_chat");
+const dm = io.of("/v2_dm");
 
 room.on("connection", (socket) => {
   // console.log("room 네임스페이스에 접속");

@@ -37,12 +37,12 @@ Chat 전송. 해당 방의 소켓들에게 "message"이벤트 발송
 
 -----상상 zone-----
 
-[get] /api/dms/:id/chats
+[get] /api/dms/:id
 
 - 해당 id와 나눈 dms를 가져옴
 - return: IDM[]
 
-[post] /api/dms/:id/chats
+[post] /api/dms/:id
 
 - dm 보내기 저장
 - body: { content: string(내용) }

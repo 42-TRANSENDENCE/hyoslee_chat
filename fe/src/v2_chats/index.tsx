@@ -31,10 +31,10 @@ const socket = io("http://localhost:3095/v2_chat", {
 
 export default function V2chats() {
   const params = useParams<{ roomId?: string }>();
+  const { roomId } = params;
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const password = queryParams.get("password");
-  const { roomId } = params;
   const [chat, setChat] = useState("");
   const scrollbarRef = useRef<Scrollbars>(null);
 

@@ -6,6 +6,7 @@ import Login from "./pages/login";
 import V2rooms from "./pages/v2_rooms";
 import V2chats from "./v2_chats";
 import CreateRoom from "./v2_create_room";
+import V2dms from "./v2_dms";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
       <Route path="/v2_rooms/:roomId/chat" element={<V2chats />} />
       {/* <Route path="/v2_rooms/:roomId" element={<V2rooms />} /> */}
       <Route path="/v2_rooms/*" element={<V2rooms />} />
+      <Route path="/v2_dms/:dmId" element={<V2dms />} />
     </Routes>
   );
 }

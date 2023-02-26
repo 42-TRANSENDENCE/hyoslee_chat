@@ -34,3 +34,17 @@ db에 Room추가 후, 새Room 정보를 담아 "newRoom"이벤트를 통해 클�
 
 [post] /api/room_list/room/:id/chat
 Chat 전송. 해당 방의 소켓들에게 "message"이벤트 발송
+
+-----상상 zone-----
+
+[get] /api/dms/:id/chats
+
+- 해당 id와 나눈 dms를 가져옴
+- return: IDM[]
+
+[post] /api/dms/:id/chats
+
+- dm 보내기 저장
+- body: { content: string(내용) }
+- return: 'ok'
+- dm 소켓 이벤트가 emit됨

@@ -19,7 +19,6 @@ async function postChat(roomId: string, data: any): Promise<string> {
     },
     body: JSON.stringify({
       createdAt: new Date(),
-      user: "hyoslee",
       chat: data,
     }),
   }).then((res) => res.text());

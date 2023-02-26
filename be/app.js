@@ -1,11 +1,19 @@
 const cors = require("cors");
 const express = require("express");
+const session = require("express-session");
 const SocketIO = require("socket.io");
 const { user_db, chats_db, v2_room_db, v2_chat_db } = require("./db");
 
 const app = express();
 app.set("PORT", process.env.PORT || 3095);
 app.use(express.json());
+app.use(
+  session({
+    secret: "mysecretkey",
+    resave: false,
+    saveUninitialized: true,
+  })
+);
 
 const router = express.Router();
 
@@ -64,6 +72,11 @@ router.post("/chats/:chat_id/private", (req, res) => {
 });
 /************************* router Real (/api/*) **************************/
 /************************* router v2 (/api/*) **************************/
+router.get("/user", (req, res) => {
+  console.log("세션: ", req.sessionID);
+  return res.json({ sessionID: req.sessionID });
+});
+
 router.get("/room_list", (req, res) => {
   return res.json(v2_room_db);
 });
@@ -78,7 +91,7 @@ router.post("/room_list/room", (req, res) => {
     id: room_id++,
     title,
     max,
-    owner: "hyoslee",
+    owner: req.sessionID,
     password,
     createdAt: new Date(),
   };
@@ -104,7 +117,7 @@ router.get("/room_list/room/:id", (req, res) => {
 router.delete("/room_list/room/:id");
 router.get("/room_list/room/:id/chat", (req, res) => {
   // console.log(v2_chat_db[req.params.id]);
-  console.log(req.params.id, req.query.password);
+  // console.log(req.params.id, req.query.password);
   if (req.query.password) {
     // console.log("비밀번호가 있습니다.");
     const room = v2_room_db.data.find((v) => {
@@ -112,7 +125,8 @@ router.get("/room_list/room/:id/chat", (req, res) => {
         return v;
       }
     });
-    console.log("room:", room);
+    // console.log("room:", room);
+    // console.log("에러체킹 ", room.password);
     if (room.password && room.password !== req.query.password) {
       console.log("401 error!");
       return res.status(401).json({ message: "Incorrect password" });
@@ -129,6 +143,7 @@ router.post("/room_list/room/:id/chat", (req, res) => {
   if (!v2_chat_db[req.params.id]) {
     v2_chat_db[req.params.id] = [];
   }
+  req.body.user = req.sessionID;
   v2_chat_db[req.params.id].push(req.body);
   console.log("req.body: ", req.body);
 
@@ -216,6 +231,7 @@ chat.on("connection", (socket) => {
     // const { referer } = socket.request.headers;
     // const roomId = new URL(referer).pathname.split("/").at(-2);
     // console.log(roomId + "를 나갓습니다.");
+    console.log("chat 네임스페이스 접속 해제");
     chat.to(data).emit("leave", {
       chat: `님이 퇴장하셨습니다.`,
     });

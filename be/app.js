@@ -104,7 +104,21 @@ router.get("/room_list/room/:id", (req, res) => {
 });
 router.delete("/room_list/room/:id");
 router.get("/room_list/room/:id/chat", (req, res) => {
-  console.log(v2_chat_db[req.params.id]);
+  // console.log(v2_chat_db[req.params.id]);
+  console.log(req.params.id, req.query.password);
+  if (req.query.password) {
+    console.log("비밀번호가 있습니다.");
+    const room = v2_room_db.data.find((v) => {
+      if (String(v.id) === req.params.id) {
+        return v;
+      }
+    });
+    console.log("room:", room);
+    if (room.password && room.password !== req.query.password) {
+      console.log("401 error!");
+      return res.status(401).json({ message: "Incorrect password" });
+    }
+  }
   if (!v2_chat_db[req.params.id]) {
     v2_chat_db[req.params.id] = [];
   }
@@ -189,8 +203,6 @@ chat.on("connection", (socket) => {
     if (userCount === 0) {
       console.log(`Deleting room ${room}`);
       delete v2_chat_db[room];
-      // v2_room_db.data = v2_room_db.data.filter((v) => v.id !== room);
-      // delete v2_room_db.data[v2_room_db.data.findIndex((v) => v.id === room)];
       v2_room_db.data = v2_room_db.data.filter((v) => v.id !== Number(room));
       console.log("v2_room_db: ", v2_room_db);
       console.log("v2_chat_db: ", v2_chat_db);

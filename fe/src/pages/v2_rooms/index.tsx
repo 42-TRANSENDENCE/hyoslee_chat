@@ -55,9 +55,9 @@ function V2rooms() {
   }, [onNewRoom, onRemoveRoom]);
 
   const onEnterEvent = useCallback((e: any) => {
-    let enterApiURL;
+    let enterApiURL: any, password: any;
     if (e.target.dataset.password === "true") {
-      const password = prompt("비밀번호를 입력하세요");
+      password = prompt("비밀번호를 입력하세요");
       e.preventDefault();
       enterApiURL = `/api/room_list/room/${e.target.dataset.id}?password=${password}`;
     } else {
@@ -67,7 +67,11 @@ function V2rooms() {
       .then((res) => res.text())
       .then((data) => {
         if (data === "OK") {
-          navigate(`/v2_rooms/${e.target.dataset.id}/chat`);
+          let navigateURL = `/v2_rooms/${e.target.dataset.id}/chat`;
+          if (e.target.dataset.password === "true") {
+            navigateURL = `/v2_rooms/${e.target.dataset.id}/chat?password=${password}`;
+          }
+          navigate(navigateURL);
         } else {
           setPasswordError("비밀번호가 틀렸습니다.");
         }

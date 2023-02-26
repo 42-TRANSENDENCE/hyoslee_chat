@@ -2,7 +2,7 @@ import styled from "@emotion/styled";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Scrollbars from "react-custom-scrollbars";
 import { useMutation, useQuery, useQueryClient } from "react-query";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -32,12 +32,32 @@ const socket = io("http://localhost:3095/v2_chat", {
 
 export default function V2chats() {
   const params = useParams<{ roomId?: string }>();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const password = queryParams.get("password");
   const { roomId } = params;
   const [chat, setChat] = useState("");
   const scrollbarRef = useRef<Scrollbars>(null);
 
-  const { data: chatDatas, isLoading } = useQuery<any>(["chat", roomId], () =>
-    fetch(`/api/room_list/room/${roomId}/chat`).then((res) => res.json())
+  const {
+    data: chatDatas,
+    isLoading,
+    isError,
+  } = useQuery<any>(
+    ["chat", roomId],
+    async () => {
+      const response = await fetch(
+        `/api/room_list/room/${roomId}/chat?password=${password}`
+      );
+      if (!response.ok) {
+        throw new Error("password check Error!");
+      }
+      return response.json();
+    },
+    {
+      retry: 1,
+      retryOnMount: true,
+    }
   );
   console.log("chatDatas: ", chatDatas);
 
@@ -94,6 +114,7 @@ export default function V2chats() {
   }, []);
 
   useEffect(() => {
+    // if (chatDatas === undefined) return;
     console.log("소켓 연결되어라!");
     socket?.on("message", onMessage);
     return () => {
@@ -102,6 +123,7 @@ export default function V2chats() {
   }, [onMessage]);
 
   useEffect(() => {
+    // if (chatDatas === undefined) return;
     console.log("소켓 연결되어라! (join)");
     socket?.on("join", onJoin);
     socket?.on("exit", onExit);
@@ -112,16 +134,8 @@ export default function V2chats() {
     };
   }, [roomId, onJoin, onExit]);
 
-  // useEffect(() => {
-  //   console.log("소켓 연결되어라! (leave)");
-  //   socket?.on("leave", onLeave);
-  //   return () => {
-  //     socket.disconnect();
-  //     socket?.off("leave", onLeave);
-  //   };
-  // }, [roomId, onLeave]);
-
   useEffect(() => {
+    // if (chatDatas === undefined) return;
     socket?.emit("join", roomId);
   }, [roomId]);
 
@@ -140,15 +154,14 @@ export default function V2chats() {
     setChat(e.target.value);
   }, []);
 
-  // const onExit = useCallback(
-  //   (e: any) => {
-  //     e.preventDefault();
-  //     navigate("/v2_rooms");
-  //   },
-  //   [navigate]
-  // );
-
   if (isLoading) return <div />;
+  if (isError)
+    return (
+      <>
+        <div>비밀번호 틀렸어</div>
+        <Link to="/v2_rooms">방 목록으로</Link>
+      </>
+    );
   return (
     <>
       <Scrollbars

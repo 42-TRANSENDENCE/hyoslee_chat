@@ -196,7 +196,7 @@ chat.on("connection", (socket) => {
       console.log("v2_chat_db: ", v2_chat_db);
       socket.emit("removeRoom", room);
     } else {
-      chat.to(data).emit("exit", {
+      chat.to(room).emit("exit", {
         chat: `님이 퇴장하셨습니다.`,
       });
     }

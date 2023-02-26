@@ -10,8 +10,8 @@ import CreateRoom from "./v2_create_room";
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Login />} />
-      <Route path="/login" element={<Navigate replace to="/" />} />
+      <Route path="/" element={<Navigate replace to="/v2_rooms" />} />
+      <Route path="/login" element={<Login />} />
       <Route path="*" element={<h1>Not Found</h1>} />
       <Route path="/chats/*" element={<Chats />} />
       <Route path="/v2_rooms/create_room" element={<CreateRoom />} />

@@ -14,6 +14,7 @@ app.use(
     saveUninitialized: true,
   })
 );
+app.use(cors());
 
 const router = express.Router();
 

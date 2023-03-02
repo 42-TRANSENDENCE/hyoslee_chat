@@ -152,15 +152,12 @@ router.get("/room_list", (req, res) => {
 // router.get("/room_list/room");
 let room_id = 2;
 router.post("/room_list/room", (req, res) => {
-  const { title, max, password } = req.body;
-  // for (const [key, value] of Object.entries(req.body)) {
-  //   console.log(`${key}: ${value}`);
-  // }
+  const { title, max, password, owner } = req.body;
   new_data = {
     id: room_id++,
     title,
     max,
-    owner: req.sessionID,
+    owner,
     password,
     createdAt: new Date(),
   };
@@ -210,7 +207,14 @@ router.post("/room_list/room/:id/chat", (req, res) => {
   if (!v2_chat_db[req.params.id]) {
     v2_chat_db[req.params.id] = [];
   }
-  req.body.user = req.sessionID;
+
+  // const token = req.headers.authorization?.split(" ")[1];
+  // if (!token) {
+  //   return res.status(401).json({ message: "Authorization header missing" });
+  // }
+
+  // const decoded = jwt.verify(token, secretKey);
+  // req.body.user = decoded.username;
   v2_chat_db[req.params.id].push(req.body);
   console.log("req.body: ", req.body);
 

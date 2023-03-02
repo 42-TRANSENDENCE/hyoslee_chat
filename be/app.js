@@ -2,6 +2,8 @@ const cors = require("cors");
 const express = require("express");
 const session = require("express-session");
 const SocketIO = require("socket.io");
+const jwt = require("jsonwebtoken");
+const bodyParser = require("body-parser");
 const { user_db, chats_db, v2_room_db, v2_chat_db } = require("./db");
 
 const app = express();
@@ -17,6 +19,33 @@ app.use(
 app.use(cors());
 
 const router = express.Router();
+
+/** JWT Authentication Server */
+const secretKey = "your_secret_key";
+router.post("/login", (req, res) => {
+  const token = jwt.sign({ username: req.body.username }, secretKey);
+  res.json({ token });
+});
+router.get("/protected", (req, res) => {
+  console.log("");
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Authorization header missing" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, secretKey);
+    if (decoded) {
+      console.log(decoded.username);
+      res.json({ message: "You have access to the protected route" });
+    } else {
+      res.status(401).json({ message: "Invalid token" });
+    }
+  } catch (error) {
+    res.status(401).json({ message: "Invalid token" });
+  }
+});
+/**  JWT Authentication Server End */
 
 /************************* router test (/api/) **************************/
 // router.get("/", (req, res) => {

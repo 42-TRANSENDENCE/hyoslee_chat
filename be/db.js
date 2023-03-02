@@ -1,12 +1,5 @@
 user_db = {
-  data: [
-    {
-      id: "hyoslee",
-    },
-    {
-      id: "dkim2",
-    },
-  ],
+  data: [],
 };
 chats_db = {
   chat_2: {

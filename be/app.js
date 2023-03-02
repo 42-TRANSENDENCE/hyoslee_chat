@@ -5,6 +5,7 @@ const SocketIO = require("socket.io");
 const jwt = require("jsonwebtoken");
 const bodyParser = require("body-parser");
 const { user_db, chats_db, v2_room_db, v2_chat_db } = require("./db");
+const bcrypt = require("bcrypt");
 
 const app = express();
 app.set("PORT", process.env.PORT || 3095);
@@ -20,14 +21,56 @@ app.use(cors());
 
 const router = express.Router();
 
+//TEST
+router.get("/test/pwd", (req, res) => {
+  const plainTextPassword = "password123";
+  const saltRounds = 10;
+  let a;
+  //hash
+  bcrypt.hash(plainTextPassword, saltRounds, (err, hash) => {
+    if (err) {
+      console.error(err);
+    } else {
+      console.log({ hash });
+    }
+  });
+
+  //compare
+  const hashedPassword =
+    "$2b$10$I515fsh4mR8AYYMYaBGBnuY998Zm0oKpfn1Y7idlkoMxkMQGhRXhi";
+
+  bcrypt.compare(plainTextPassword, hashedPassword, (err, result) => {
+    if (err) {
+      console.error(err);
+    } else if (result) {
+      console.log({ hashedPassword, result });
+      console.log("Passwords match!");
+    } else {
+      console.log("Passwords do not match.");
+    }
+  });
+  res.json({ res: "res" });
+});
+
 /** JWT Authentication Server */
 const secretKey = "your_secret_key";
 router.post("/login", (req, res) => {
   const token = jwt.sign({ username: req.body.username }, secretKey);
   res.json({ token });
 });
-router.get("/protected", (req, res) => {
-  console.log("");
+router.get("/create_fakeUsers", (req, res) => {
+  for (let i = 0; i < 100; i++) {
+    let token = jwt.sign({ username: `rock${i}${i}` }, secretKey);
+    user_db.data.push({ username: `rock${i}${i}`, token: token });
+  }
+  // res.json({ token });
+  res.json(user_db);
+});
+router.get("/fakeUser/id/:id", (req, res) => {
+  const id = req.params.id;
+  res.json(user_db.data[Number(id)]);
+});
+router.get("/user", (req, res) => {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) {
     return res.status(401).json({ message: "Authorization header missing" });
@@ -35,12 +78,8 @@ router.get("/protected", (req, res) => {
 
   try {
     const decoded = jwt.verify(token, secretKey);
-    if (decoded) {
-      console.log(decoded.username);
-      res.json({ message: "You have access to the protected route" });
-    } else {
-      res.status(401).json({ message: "Invalid token" });
-    }
+    console.log(decoded);
+    res.json({ username: decoded.username });
   } catch (error) {
     res.status(401).json({ message: "Invalid token" });
   }
@@ -102,10 +141,10 @@ router.post("/chats/:chat_id/private", (req, res) => {
 });
 /************************* router Real (/api/*) **************************/
 /************************* router v2 (/api/*) **************************/
-router.get("/user", (req, res) => {
-  console.log("세션: ", req.sessionID);
-  return res.json({ sessionID: req.sessionID });
-});
+// router.get("/user", (req, res) => {
+//   console.log("세션: ", req.sessionID);
+//   return res.json({ sessionID: req.sessionID });
+// });
 
 router.get("/room_list", (req, res) => {
   return res.json(v2_room_db);

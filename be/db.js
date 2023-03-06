@@ -49,23 +49,30 @@ chats_db = {
     secret: "1234",
   },
 };
+
 v2_room_db = {
   data: [
     {
       title: "room1",
       id: 0,
-      max: 5,
       owner: "hyoslee",
       password: "",
+      status: 0,
       createdAt: "1992.02.19",
+      muteList: [],
+      kickList: [],
+      memberList: [],
     },
     {
       title: "room2",
       id: 1,
-      max: 10,
       owner: "hyoslee",
       password: "1234",
+      status: 1,
       createdAt: "1992.02.20",
+      muteList: [],
+      kickList: [],
+      memberList: [],
     },
   ],
 };

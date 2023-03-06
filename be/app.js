@@ -147,7 +147,7 @@ router.post("/chats/:chat_id/private", (req, res) => {
 // });
 
 router.get("/room_list", (req, res) => {
-  return res.json(v2_room_db);
+  return res.json(v2_room_db.data);
 });
 // router.get("/room_list/room");
 let room_id = 2;
@@ -156,16 +156,33 @@ router.post("/room_list/room", (req, res) => {
   new_data = {
     id: room_id++,
     title,
-    max,
     owner,
     password,
+    status: password ? 1 : 0,
+    muteList: [],
+    kickList: [],
     createdAt: new Date(),
   };
   v2_room_db.data.push(new_data);
   // return res.json(v2_room_db.data);
-  io.of("/v2_room").emit("newRoom", new_data);
+  // io.of("/v2_room").emit("newRoom", new_data);
+  io.of("/v2_chat").emit("newRoom", new_data);
   return res.send("OK!");
 });
+// router.get("/room_list/room/:id", (req, res) => {
+//   // console.log("here!", req.params.id, req.query.password);
+//   const room = v2_room_db.data.find((v) => {
+//     // console.log(String(v.id), req.params.id);
+//     if (String(v.id) === req.params.id) {
+//       return v;
+//     }
+//   });
+//   if (!room) return res.send("존재하지 않는 방입니다.");
+//   if (room.password && room.password !== req.query.password) {
+//     return res.send("비밀번호가 틀렸습니다.");
+//   }
+//   return res.send("OK");
+// });
 router.get("/room_list/room/:id", (req, res) => {
   // console.log("here!", req.params.id, req.query.password);
   const room = v2_room_db.data.find((v) => {
@@ -174,11 +191,39 @@ router.get("/room_list/room/:id", (req, res) => {
       return v;
     }
   });
-  if (!room) return res.send("존재하지 않는 방입니다.");
-  if (room.password && room.password !== req.query.password) {
-    return res.send("비밀번호가 틀렸습니다.");
+  if (!room) return res.status(401).send("존재하지 않는 방입니다.");
+  return res.status(200).json({
+    memberList: room.memberList,
+    kickList: room.kickList,
+    status: room.status,
+  });
+});
+router.post("/room_list/room/:id", (req, res) => {
+  const room = v2_room_db.data.filter((v) => {
+    if (String(v.id) === req.params.id) {
+      return v;
+    }
+    return false;
+  });
+  if (room === undefined)
+    return res.status(401).send("존재하지 않는 방입니다.");
+
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Authorization header missing" });
   }
-  return res.send("OK");
+  const decoded = jwt.verify(token, secretKey);
+  const username = decoded.username;
+
+  if (req.body.password === undefined) {
+    if (room.status !== 0) return res.status(401).send("공개방이 아닙니다.");
+    room.memberList.push(username);
+    return res.status(200).send("OK");
+  }
+  if (room.password !== req.body.password)
+    return res.status(401).send("비밀번호가 틀렸습니다.");
+  room.memberList.push(username);
+  return res.status(200).send("OK");
 });
 router.delete("/room_list/room/:id");
 router.get("/room_list/room/:id/chat", (req, res) => {
@@ -280,17 +325,18 @@ app.set("io", io);
 // });
 
 /************************* socket v2 **************************/
-const room = io.of("/v2_room");
+// const room = io.of("/v2_room");
 const chat = io.of("/v2_chat");
-const dm = io.of("/v2_dm");
+// const dm = io.of("/v2_dm");
 
-room.on("connection", (socket) => {
-  // console.log("room 네임스페이스에 접속");
-  socket.on("disconnect", () => {
-    // console.log("room 네임스페이스 접속 해제");
-  });
-});
+// room.on("connection", (socket) => {
+//   // console.log("room 네임스페이스에 접속");
+//   socket.on("disconnect", () => {
+//     // console.log("room 네임스페이스 접속 해제");
+//   });
+// });
 chat.on("connection", (socket) => {
+  console.log("chat 네임스페이스 접속 on");
   socket.on("join", (data) => {
     socket.join(data);
     console.log(data + "에 join합니다.");
@@ -308,9 +354,9 @@ chat.on("connection", (socket) => {
       console.log(`Deleting room ${room}`);
       delete v2_chat_db[room];
       v2_room_db.data = v2_room_db.data.filter((v) => v.id !== Number(room));
-      console.log("v2_room_db: ", v2_room_db);
-      console.log("v2_chat_db: ", v2_chat_db);
-      socket.emit("removeRoom", room);
+      // console.log("v2_room_db: ", v2_room_db);
+      // console.log("v2_chat_db: ", v2_chat_db);
+      chat.emit("removeRoom", room);
     } else {
       chat.to(room).emit("exit", {
         chat: `님이 퇴장하셨습니다.`,
@@ -318,9 +364,6 @@ chat.on("connection", (socket) => {
     }
   });
   socket.on("disconnect", (data) => {
-    // const { referer } = socket.request.headers;
-    // const roomId = new URL(referer).pathname.split("/").at(-2);
-    // console.log(roomId + "를 나갓습니다.");
     console.log("chat 네임스페이스 접속 해제");
     chat.to(data).emit("leave", {
       chat: `님이 퇴장하셨습니다.`,

@@ -62,6 +62,7 @@ v2_room_db = {
       muteList: [],
       kickList: [],
       memberList: [],
+      adminList: [],
     },
     {
       title: "room2",
@@ -73,6 +74,7 @@ v2_room_db = {
       muteList: [],
       kickList: [],
       memberList: [],
+      adminList: [],
     },
   ],
 };

@@ -78,7 +78,7 @@ router.get("/user", (req, res) => {
 
   try {
     const decoded = jwt.verify(token, secretKey);
-    console.log(decoded);
+    // console.log(decoded);
     res.json({ username: decoded.username });
   } catch (error) {
     res.status(401).json({ message: "Invalid token" });
@@ -161,92 +161,91 @@ router.post("/room_list/room", (req, res) => {
     status: password ? 1 : 0,
     muteList: [],
     kickList: [],
+    memberList: [],
+    adminList: [],
     createdAt: new Date(),
   };
   v2_room_db.data.push(new_data);
-  // return res.json(v2_room_db.data);
-  // io.of("/v2_room").emit("newRoom", new_data);
   io.of("/v2_chat").emit("newRoom", new_data);
   return res.send("OK!");
 });
-// router.get("/room_list/room/:id", (req, res) => {
-//   // console.log("here!", req.params.id, req.query.password);
-//   const room = v2_room_db.data.find((v) => {
-//     // console.log(String(v.id), req.params.id);
-//     if (String(v.id) === req.params.id) {
-//       return v;
-//     }
-//   });
-//   if (!room) return res.send("존재하지 않는 방입니다.");
-//   if (room.password && room.password !== req.query.password) {
-//     return res.send("비밀번호가 틀렸습니다.");
-//   }
-//   return res.send("OK");
-// });
+
 router.get("/room_list/room/:id", (req, res) => {
-  // console.log("here!", req.params.id, req.query.password);
   const room = v2_room_db.data.find((v) => {
-    // console.log(String(v.id), req.params.id);
     if (String(v.id) === req.params.id) {
       return v;
     }
   });
   if (!room) return res.status(401).send("존재하지 않는 방입니다.");
+  console.log("/room_list/room/:id  200 return");
   return res.status(200).json({
     memberList: room.memberList,
     kickList: room.kickList,
+    muteList: room.muteList,
+    adminList: room.adminList,
     status: room.status,
+    owner: room.owner,
   });
 });
 router.post("/room_list/room/:id", (req, res) => {
-  const room = v2_room_db.data.filter((v) => {
+  const room = v2_room_db.data.find((v) => {
     if (String(v.id) === req.params.id) {
       return v;
     }
     return false;
   });
+  // console.log("here");
   if (room === undefined)
     return res.status(401).send("존재하지 않는 방입니다.");
 
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) {
+    // console.log("here2");
     return res.status(401).json({ message: "Authorization header missing" });
   }
   const decoded = jwt.verify(token, secretKey);
   const username = decoded.username;
 
   if (req.body.password === undefined) {
+    // console.log("here3", room);
     if (room.status !== 0) return res.status(401).send("공개방이 아닙니다.");
     room.memberList.push(username);
+    // console.log("here4");
     return res.status(200).send("OK");
   }
+  // console.log("here5");
   if (room.password !== req.body.password)
     return res.status(401).send("비밀번호가 틀렸습니다.");
+  // console.log("here6");
   room.memberList.push(username);
   return res.status(200).send("OK");
 });
 router.delete("/room_list/room/:id");
 router.get("/room_list/room/:id/chat", (req, res) => {
-  // console.log(v2_chat_db[req.params.id]);
-  // console.log(req.params.id, req.query.password);
-  if (req.query.password) {
-    // console.log("비밀번호가 있습니다.");
-    const room = v2_room_db.data.find((v) => {
-      if (String(v.id) === req.params.id) {
-        return v;
-      }
-    });
-    // console.log("room:", room);
-    // console.log("에러체킹 ", room.password);
-    if (room.password && room.password !== req.query.password) {
-      console.log("401 error!");
-      return res.status(401).json({ message: "Incorrect password" });
+  const token = req.headers.authorization?.split(" ")[1];
+  console.log("here1");
+  if (!token) {
+    return res.status(401).json({ message: "Authorization header missing" });
+  }
+  console.log("here2");
+
+  const decoded = jwt.verify(token, secretKey);
+  const username = decoded.username;
+  const room = v2_room_db.data.find((v) => {
+    if (String(v.id) === req.params.id) {
+      return v;
     }
+  });
+  if (room.memberList.includes(username)) {
+    if (!v2_chat_db[req.params.id]) {
+      v2_chat_db[req.params.id] = [];
+    }
+    console.log("here3");
+    return res.status(200).json(v2_chat_db[req.params.id]);
+  } else {
+    console.log("here4");
+    return res.status(401).send("채팅방에 참여하지 않았습니다.");
   }
-  if (!v2_chat_db[req.params.id]) {
-    v2_chat_db[req.params.id] = [];
-  }
-  res.json(v2_chat_db[req.params.id]);
 });
 router.post("/room_list/room/:id/chat", (req, res) => {
   if (!v2_chat_db[req.params.id]) {
@@ -273,6 +272,40 @@ router.post("/room_list/room/:id/chat", (req, res) => {
 
   res.send("OK");
 });
+router.post("/api/room/kick", (req, res) => {
+  let roomsArr = v2_room_db.data;
+  let room;
+  for (let i = 0; i < roomsArr.length; i++) {
+    if (roomsArr[i].id == req.body.room_id) {
+      room = roomsArr[i];
+      break;
+    }
+  }
+  let admin = room.adminList.filter((admin) => {
+    return admin.user_id == req.body.user_me;
+  });
+  if (admin) {
+    let user_you = room.memberList.filter((user) => {
+      return user.user_id == req.body.user_you;
+    });
+    let newMember = room.memberList.filter((user) => {
+      return user.user_id != req.body.user_you;
+    });
+    room.memberList = newMember;
+  }
+
+  let host = room.owner;
+  if (host == req.body.user_me) {
+    let user_you = room.memberList.filter((user) => {
+      return user.user_id == req.body.user_you;
+    });
+    let newMember = room.memberList.filter((user) => {
+      return user.user_id != req.body.user_you;
+    });
+    room.memberList = newMember;
+  }
+});
+
 router.get("/dms", (req, res) => {
   return res.json(v2_dms_db.data);
 });

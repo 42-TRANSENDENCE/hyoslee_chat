@@ -236,6 +236,14 @@ router.get("/room_list/room/:id/chat", (req, res) => {
       return v;
     }
   });
+  const kickinfo = room.kickList.find((v) => v[0] == username);
+  if (kickinfo) {
+    if (new Date() < kickinfo[1]) {
+      return res.status(401).send("강퇴당한 사용자입니다.");
+    } else {
+      room.kickList.splice(room.kickList.indexOf(kickinfo), 1);
+    }
+  }
   if (room.memberList.includes(username)) {
     if (!v2_chat_db[req.params.id]) {
       v2_chat_db[req.params.id] = [];
@@ -248,6 +256,32 @@ router.get("/room_list/room/:id/chat", (req, res) => {
   }
 });
 router.post("/room_list/room/:id/chat", (req, res) => {
+  const room = v2_room_db.data.find((v) => {
+    if (String(v.id) === req.params.id) {
+      return v;
+    }
+  });
+  const token = req.headers.authorization?.split(" ")[1];
+  console.log("here1");
+  if (!token) {
+    return res.status(401).json({ message: "Authorization header missing" });
+  }
+  console.log("here2");
+
+  const decoded = jwt.verify(token, secretKey);
+  const username = decoded.username;
+  console.log("here0000000");
+  const muteinfo = room.muteList.find((v) => v[0] == username);
+  if (muteinfo) {
+    if (new Date() < muteinfo[1]) {
+      console.log("here111111");
+      return res.status(401).send("mute당한 사용자입니다.");
+    } else {
+      console.log("here22222");
+      room.muteList.splice(room.muteList.indexOf(muteinfo), 1);
+    }
+  }
+
   if (!v2_chat_db[req.params.id]) {
     v2_chat_db[req.params.id] = [];
   }
@@ -259,6 +293,7 @@ router.post("/room_list/room/:id/chat", (req, res) => {
 
   // const decoded = jwt.verify(token, secretKey);
   // req.body.user = decoded.username;
+
   v2_chat_db[req.params.id].push(req.body);
   console.log("req.body: ", req.body);
 
@@ -272,45 +307,126 @@ router.post("/room_list/room/:id/chat", (req, res) => {
 
   res.send("OK");
 });
-router.post("/api/room/kick", (req, res) => {
+router.post("/room/:roomid/kick/:userid", (req, res) => {
   let roomsArr = v2_room_db.data;
   let room;
   for (let i = 0; i < roomsArr.length; i++) {
-    if (roomsArr[i].id == req.body.room_id) {
+    if (roomsArr[i].id == req.params.roomid) {
       room = roomsArr[i];
       break;
     }
   }
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Authorization header missing" });
+  }
+  const decoded = jwt.verify(token, secretKey);
+  const myname = decoded.username;
+
   let admin = room.adminList.filter((admin) => {
-    return admin.user_id == req.body.user_me;
+    return admin.user_id == myname;
   });
+  const ten = new Date().getTime() + 1000 * 10;
   if (admin) {
-    let user_you = room.memberList.filter((user) => {
-      return user.user_id == req.body.user_you;
-    });
     let newMember = room.memberList.filter((user) => {
-      return user.user_id != req.body.user_you;
+      return user.user_id != req.params.userid;
     });
     room.memberList = newMember;
+    room.kickList.push([req.params.userid, ten]);
   }
 
   let host = room.owner;
-  if (host == req.body.user_me) {
-    let user_you = room.memberList.filter((user) => {
-      return user.user_id == req.body.user_you;
-    });
+  if (host == myname) {
     let newMember = room.memberList.filter((user) => {
-      return user.user_id != req.body.user_you;
+      return user.user_id != req.params.userid;
     });
     room.memberList = newMember;
+    room.kickList.push([req.params.userid, ten]);
   }
+  io.of("/v2_chat").to(req.params.roomid).emit("kick", req.params.userid);
+});
+router.post("/room/:roomid/ban/:userid", (req, res) => {
+  let roomsArr = v2_room_db.data;
+  let room;
+  for (let i = 0; i < roomsArr.length; i++) {
+    if (roomsArr[i].id == req.params.roomid) {
+      room = roomsArr[i];
+      break;
+    }
+  }
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Authorization header missing" });
+  }
+  const decoded = jwt.verify(token, secretKey);
+  const myname = decoded.username;
+
+  let admin = room.adminList.filter((admin) => {
+    return admin.user_id == myname;
+  });
+  const infiniteDate = new Date();
+  infiniteDate.setFullYear(9999);
+  infiniteDate.setMonth(11);
+  infiniteDate.setDate(31);
+  if (admin) {
+    let newMember = room.memberList.filter((user) => {
+      return user.user_id != req.params.userid;
+    });
+    room.memberList = newMember;
+    room.kickList.push([req.params.userid, infiniteDate]);
+  }
+
+  let host = room.owner;
+  if (host == myname) {
+    let newMember = room.memberList.filter((user) => {
+      return user.user_id != req.params.userid;
+    });
+    room.memberList = newMember;
+    room.kickList.push([req.params.userid, infiniteDate]);
+  }
+  io.of("/v2_chat").to(req.params.roomid).emit("kick", req.params.userid);
+});
+
+router.post("/room/:roomid/admin/:userid", (req, res) => {
+  let roomsArr = v2_room_db.data;
+  let room;
+  for (let i = 0; i < roomsArr.length; i++) {
+    if (roomsArr[i].id == req.params.roomid) {
+      room = roomsArr[i];
+      break;
+    }
+  }
+  room.adminList.push(req.params.userid);
+  io.of("/v2_chat").to(req.params.roomid).emit("role", req.params.userid);
+});
+router.post("/room/:roomid/mute/:userid", (req, res) => {
+  let roomsArr = v2_room_db.data;
+  let room;
+  for (let i = 0; i < roomsArr.length; i++) {
+    if (roomsArr[i].id == req.params.roomid) {
+      room = roomsArr[i];
+      break;
+    }
+  }
+
+  const ten = new Date().getTime() + 1000 * 10;
+  room.muteList.push([req.params.userid, ten]);
+  console.log("mute");
+  // io.of("/v2_chat").to(req.params.roomid).emit("mute", req.params.userid);
 });
 
 router.get("/dms", (req, res) => {
   return res.json(v2_dms_db.data);
 });
 router.get("/dms/:id", (req, res) => {
-  const SenderID = req.sessionID;
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Authorization header missing" });
+  }
+
+  const decoded = jwt.verify(token, secretKey);
+  const myname = decoded.username;
+  const SenderID = myname;
   const ReceiverID = req.params.id;
   const dms = v2_dms_db.data.filter((v) => {
     return (
@@ -321,9 +437,24 @@ router.get("/dms/:id", (req, res) => {
   return res.json(dms);
 });
 router.post("/dms/:id", (req, res) => {
-  console.log(req.body);
-  v2_dms_db.data.push(req.body);
-  io.of("/v2_dm").emit("DM", req.body);
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Authorization header missing" });
+  }
+
+  const decoded = jwt.verify(token, secretKey);
+  const myname = decoded.username;
+  const SenderID = myname;
+  const ReceiverID = req.params.id;
+  const content = req.body.content;
+  const dm = {
+    SenderID,
+    ReceiverID,
+    content,
+    createdAt: req.body.createdAt,
+  };
+  v2_dms_db.data.push(dm);
+  io.of("/v2_chat").to(socketMap[ReceiverID]).emit("DM", dm);
   return res.send("OK!");
 });
 /************************* router v2 End (/api/*) **************************/
@@ -358,18 +489,18 @@ app.set("io", io);
 // });
 
 /************************* socket v2 **************************/
-// const room = io.of("/v2_room");
 const chat = io.of("/v2_chat");
-// const dm = io.of("/v2_dm");
 
-// room.on("connection", (socket) => {
-//   // console.log("room 네임스페이스에 접속");
-//   socket.on("disconnect", () => {
-//     // console.log("room 네임스페이스 접속 해제");
-//   });
-// });
+const socketMap = {};
+
 chat.on("connection", (socket) => {
   console.log("chat 네임스페이스 접속 on");
+  socket.on("login", (token) => {
+    const decoded = jwt.verify(token, secretKey);
+    console.log(decoded.username);
+    socketMap[decoded.username] = socket.id;
+  });
+
   socket.on("join", (data) => {
     socket.join(data);
     console.log(data + "에 join합니다.");

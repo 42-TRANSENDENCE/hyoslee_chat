@@ -454,7 +454,7 @@ router.post("/dms/:id", (req, res) => {
   v2_dms_db.data.push(dm);
   const io = req.app.get("io");
   // io.to(socketMap[ReceiverID]).emit("DM", dm);
-  io.emit("dm", dm);
+  io.of("/v2_chat").to(socketMap[ReceiverID]).emit("dm", dm);
   console.log(socketMap, ReceiverID, socketMap[ReceiverID], JSON.stringify(dm));
   return res.send("OK!");
 });
@@ -479,7 +479,7 @@ chat.on("connection", (socket) => {
   console.log("chat 네임스페이스 접속 on");
   socket.on("login", (token) => {
     const decoded = jwt.verify(token, secretKey);
-    console.log(decoded.username);
+    console.log(decoded.username + "님이 접속하셨습니다." + socket.id);
     socketMap[decoded.username] = socket.id;
   });
 
